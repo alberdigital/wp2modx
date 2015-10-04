@@ -8,3 +8,9 @@ Installation
 - Install PHP and add it to your path.
 - Set your MODx database config in config/db.php.
 - From the application base path, run: $ yii wp-to-modx <xml-file-path> 
+
+Usage
+-------------------------
+Example:
+
+$ yii wp-to-modx/index 'aux-resources/mysite.wordpress.2015-10-03.xml' --deletePrevious=true --imagesPath=../mhh/wwwroot/assets/images/news/ --imagesLocalUrl=assets/images/news/ --modxTemplate=12

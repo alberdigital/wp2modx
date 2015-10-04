@@ -25,6 +25,7 @@ class WpToModxController extends Controller
 	public $imagesPath = '/aux-resources/images/';
 	public $replaceImages = false;
 	public $imagesLocalUrl = 'assets/images/';
+	public $modxTemplate = null;
 
 	public function options($actionID)
 	{
@@ -32,7 +33,8 @@ class WpToModxController extends Controller
 			'deletePrevious',
 			'importImages',
 			'imagesPath',
-			'imagesLocalUrl'
+			'imagesLocalUrl',
+			'modxTemplate'
 		];
 	}
 
@@ -89,6 +91,7 @@ class WpToModxController extends Controller
 					$wpDate = (string) $wp->post_date[0];
 					$pubDate = new \DateTime($wpDate);
 					$entryContentText = (string) $entryContent;
+					$postName = (string) $wp->post_name[0];
 					
 					// Replace urls.
 					foreach ($imagesUrls as $imageUrl)
@@ -111,6 +114,10 @@ class WpToModxController extends Controller
 					$modxResource->pub_date = $pubDate->getTimestamp();
 					$modxResource->published = '1';
 					$modxResource->content = $entryContentText;
+					$modxResource->hidemenu = '1';
+					$modxResource->alias = $postName;
+					$modxResource->uri = $postName;
+					$modxResource->template = isset($this->modxTemplate) ? $this->modxTemplate : $parentResource->template;
 					
 					if ($modxResource->save())
 					{
