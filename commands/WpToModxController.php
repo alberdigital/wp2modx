@@ -105,13 +105,13 @@ class WpToModxController extends Controller
 					
 					// Output to console.
 					// $entryOut .= Yii::t('console', 'Title') . ': ' . $wpTitle . "\n";
-					// $entryOut .= Yii::t('console', 'Date') . ': ' . $wpDate . "\n";
+					// $entryOut .= Yii::t('console', 'Date') . ': ' . $pubDate->getTimestamp() . "\n";
 					// $entryOut .= Yii::t('console', 'Content') . ': ' . $entryContent . "\n";
 					
 					// Set modx resource.
 					$modxResource->parent = $parentResource->id;
 					$modxResource->pagetitle = $wpTitle;
-					$modxResource->pub_date = $pubDate->getTimestamp();
+					$modxResource->publishedon = $pubDate->getTimestamp();
 					$modxResource->published = '1';
 					$modxResource->content = $entryContentText;
 					$modxResource->hidemenu = '1';
