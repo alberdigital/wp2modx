@@ -8,26 +8,36 @@ use Yii;
 class AttachmentImporter extends Component
 {
 	public $parallelDownloads = 3;
-	public $imagesPath = '/images/';
+	public $imagesPath = 'images/';
 	public $replaceFiles = true;
 
 	public function importImages($urls)
 	{
 		// Notify the number of images to import.
-		echo Yii::t('app', 'Importing {numImages} images.', [
+		echo Yii::t('app', 'Importing {numImages} images...', [
 			'numImages' => count($urls)
 		]) . "\n";
 		
-		for($i = 0; $i < count($urls); $i += $this->parallelDownloads)
+		$urlSet = [];
+		foreach ($urls as $url)
 		{
-			// Get a set of urls that will be downloaded in parallel.
-			$urlSet = [];
-			for($setIndex = $i; $setIndex < min($i + $this->parallelDownloads, count($urls)); $setIndex ++)
+			// Add the file to the next parallel loading.
+			$filePath = $this->getFilePath($url);
+			if ($this->replaceFiles || !file_exists($filePath))
 			{
-				$urlSet[] = $urls[$setIndex];
+				$urlSet[] = $url;
 			}
 			
-			// Init a parallel import.
+			// Init a parallel loading.
+			if (count($urlSet) >= $this->parallelDownloads)
+			{
+				$this->multiImportImagesSet($urlSet);
+				$urlSet = [];
+			}
+		}
+		// Init the last incomplete set loading.
+		if (count($urlSet) > 0)
+		{
 			$this->multiImportImagesSet($urlSet);
 		}
 	}
@@ -44,7 +54,7 @@ class AttachmentImporter extends Component
 		$success = true;
 		
 		$ch = curl_init($url);
-		$filePath = Yii::$app->basePath . $this->imagesPath . $fileName;
+		$filePath = $this->imagesPath . $fileName;
 		$fp = fopen($filePath, 'wb');
 		curl_setopt($ch, CURLOPT_FILE, $fp);
 		curl_setopt($ch, CURLOPT_HEADER, 0);
@@ -69,6 +79,14 @@ class AttachmentImporter extends Component
 		}
 	}
 
+	private function getFilePath($url)
+	{
+		$fileName = basename($url);
+		$filePath = $this->imagesPath . $fileName;
+		
+		return $filePath;
+	}
+	
 	/**
 	 * Import a set of images in parallel.
 	 *
@@ -77,29 +95,23 @@ class AttachmentImporter extends Component
 	 */
 	private function multiImportImagesSet($urls)
 	{
-		echo Yii::t('app', 'Importing: ') . "\n";
-		foreach ($urls as $url)
-		{
-			echo $url . "\n";
-		}
 		
 		$chs = [];
 		$chIndex = 0;
 		foreach ($urls as $url)
 		{
-			$fileName = basename($url);
-			$filePath = Yii::$app->basePath . $this->imagesPath . $fileName;
-			if ($this->replaceFiles || !file_exists($filePath))
-			{
-				$fp = fopen($filePath, 'wb');
-				
-				$ch = curl_init($url);
-				curl_setopt($ch, CURLOPT_HEADER, 0);
-				curl_setopt($ch, CURLOPT_FILE, $fp);
-				curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-				
-				$chs[] = $ch;
-			}
+			$filePath = $this->getFilePath($url);
+			
+			echo $url . "\n";
+			
+			$fp = fopen($filePath, 'wb');
+			
+			$ch = curl_init($url);
+			curl_setopt($ch, CURLOPT_HEADER, 0);
+			curl_setopt($ch, CURLOPT_FILE, $fp);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+			
+			$chs[] = $ch;
 		}
 		
 		if (count($chs) > 0)

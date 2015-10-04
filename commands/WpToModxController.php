@@ -24,12 +24,15 @@ class WpToModxController extends Controller
 	public $parallelImageDownloads = 3;
 	public $imagesPath = '/aux-resources/images/';
 	public $replaceImages = false;
+	public $imagesLocalUrl = 'assets/images/';
 
 	public function options($actionID)
 	{
 		return [
 			'deletePrevious',
-			'importImages'
+			'importImages',
+			'imagesPath',
+			'imagesLocalUrl'
 		];
 	}
 
@@ -39,14 +42,11 @@ class WpToModxController extends Controller
 	 * @param string $path
 	 *        	the location of the XML file.
 	 */
-	public function actionIndex($path = '/aux-resources/blogmarbellahillshomes-franais.wordpress.2015-10-03.xml', $parentAlias = 'news-fr')
+	public function actionIndex($path = null, $parentAlias = 'news-fr')
 	{
 		$output = '';
 		
-		$imagesUrls = [];
-		
-		$fullPath = Yii::$app->basePath . $path;
-		$fullXml = simplexml_load_file($fullPath);
+		$fullXml = simplexml_load_file($path);
 		$xml = $fullXml->channel;
 		
 		echo $xml->title[0] . "\n";
@@ -64,6 +64,8 @@ class WpToModxController extends Controller
 			$parentResource->deleteChildren();
 			$output .= Yii::t('app', 'Previous resources have been deleted.') . "\n";
 		}
+		
+		$imagesUrls = $this->getAttachmentsUrls($xml);
 		
 		$entriesCount = 0;
 		foreach ($xml->item as $entryIndex => $entry)
@@ -88,6 +90,16 @@ class WpToModxController extends Controller
 					$pubDate = new \DateTime($wpDate);
 					$entryContentText = (string) $entryContent;
 					
+					// Replace urls.
+					foreach ($imagesUrls as $imageUrl)
+					{
+						$imageUrlNoProtocol = preg_replace('(^https?://)', '', $imageUrl);
+						$entryContentText = preg_replace(
+								'(https?://' . preg_quote($imageUrlNoProtocol) . ')', 
+								$this->imagesLocalUrl . basename($imageUrl), 
+								$entryContentText);
+					}
+					
 					// Output to console.
 					// $entryOut .= Yii::t('console', 'Title') . ': ' . $wpTitle . "\n";
 					// $entryOut .= Yii::t('console', 'Date') . ': ' . $wpDate . "\n";
@@ -108,11 +120,6 @@ class WpToModxController extends Controller
 						throw new \Exception('Could not save content ' . print_r($modxResource->errors, true));
 					}
 					
-					break;
-				
-				case 'attachment':
-					$imageUrl = (string) $wp->attachment_url[0];
-					$imagesUrls[] = $imageUrl;
 					break;
 				
 				default:
@@ -142,6 +149,35 @@ class WpToModxController extends Controller
 		]) . "\n";
 		
 		echo $output;
+	}
+
+	/**
+	 * Searches for attachments in the xml and returns the urls.
+	 * 
+	 * @param \SimpleXmlElement $xml
+	 *        	The XML.
+	 * @return array An array with all the attachment's urls.
+	 */
+	public function getAttachmentsUrls($xml)
+	{
+		$urls = [];
+		
+		foreach ($xml->item as $entryIndex => $entry)
+		{
+			// Get the namespaces.
+			$namespaces = $entry->getNameSpaces(true);
+			$wp = $entry->children($namespaces['wp']);
+			$entryContent = $entry->children($namespaces['content']);
+			
+			switch ($wp->post_type[0]) {
+				case 'attachment':
+					$imageUrl = (string) $wp->attachment_url[0];
+					$urls[] = $imageUrl;
+					break;
+			}
+		}
+		
+		return $urls;
 	}
 
 }
