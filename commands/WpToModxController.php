@@ -31,6 +31,7 @@ class WpToModxController extends Controller
 	public $uriPrefix = '';
 	public $uriSuffix = '';
 	public $resetCounter = false;
+	public $freezeUri = false;
 
 	public function options($actionID)
 	{
@@ -44,7 +45,8 @@ class WpToModxController extends Controller
 			'aliasSuffix',
 			'uriPrefix',
 			'uriSufix',
-			'resetCounter'
+			'resetCounter',
+			'freezeUri'
 		];
 	}
 
@@ -118,6 +120,10 @@ class WpToModxController extends Controller
 								$entryContentText);
 					}
 					
+					// Set paragraphs.
+					$entryContentParagraphs = explode("\n", $entryContentText);
+					$entryContentMulitParagraph = '<p>' . implode('</p><p>', $entryContentParagraphs) . '</p>';
+					
 					// Output to console.
 					// $entryOut .= Yii::t('console', 'Title') . ': ' . $wpTitle . "\n";
 					// $entryOut .= Yii::t('console', 'Date') . ': ' . $pubDate->getTimestamp() . "\n";
@@ -128,11 +134,15 @@ class WpToModxController extends Controller
 					$modxResource->pagetitle = $wpTitle;
 					$modxResource->publishedon = $pubDate->getTimestamp();
 					$modxResource->published = '1';
-					$modxResource->content = $entryContentText;
+					$modxResource->content = $entryContentMulitParagraph;
 					$modxResource->hidemenu = '1';
 					$modxResource->alias = $this->aliasPrefix . $postName . $this->aliasSuffix;
-					$modxResource->uri = $this->uriPrefix . $postName . $this->uriSuffix;
 					$modxResource->template = isset($this->modxTemplate) ? $this->modxTemplate : $parentResource->template;
+					if ($this->freezeUri)
+					{
+						$modxResource->uri_override = 1;
+						$modxResource->uri = $this->uriPrefix . $postName . $this->uriSuffix;
+					}
 					
 					if ($modxResource->save())
 					{
