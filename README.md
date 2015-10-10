@@ -13,4 +13,4 @@ Usage
 -------------------------
 Example:
 
-$ yii wp-to-modx/index 'aux-resources/mysite.wordpress.2015-10-03.xml' --deletePrevious=true --imagesPath=../mhh/wwwroot/assets/images/news/ --imagesLocalUrl=assets/images/news/ --modxTemplate=12
+$ yii wp-to-modx/index aux-resources/mysite.wordpress.2015-10-03.xml news-fr --deletePrevious=true --imagesPath=../mhh/wwwroot/assets/images/news/ --imagesLocalUrl=assets/images/news/ --modxTemplate=12 --aliasSuffix=-fr --uriPrefix=fr/ --resetCounter=true

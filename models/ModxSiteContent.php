@@ -145,4 +145,17 @@ class ModxSiteContent extends \yii\db\ActiveRecord
     {
     	static::deleteAll(['parent' => $this->id]);
     }
+    
+    /**
+     * Resets the table id auto increment counter.
+     */
+    public static function resetCounter()
+    {
+    	$result = static::find()->select('MAX(id) as maxId')->asArray()->one();
+    	$lastId = intval($result['maxId']);
+    	$resetAutoIncrement = Yii::$app->db->createCommand('ALTER TABLE {{' . static::tableName() . '}} AUTO_INCREMENT=:nextId;', [
+    		':nextId' => $lastId + 1
+    	]);
+    	$resetAutoIncrement->execute();
+    }
 }

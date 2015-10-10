@@ -15,7 +15,7 @@ use yii\base\Exception;
 use Faker\Provider\DateTime;
 
 /**
- * Migrates all posts from a Wordpress export XML files to resources in a MODx database
+ * Migrates all posts from a Wordpress export XML file to resources in a MODx database
  */
 class WpToModxController extends Controller
 {
@@ -26,6 +26,11 @@ class WpToModxController extends Controller
 	public $replaceImages = false;
 	public $imagesLocalUrl = 'assets/images/';
 	public $modxTemplate = null;
+	public $aliasPrefix = '';
+	public $aliasSuffix = '';
+	public $uriPrefix = '';
+	public $uriSuffix = '';
+	public $resetCounter = false;
 
 	public function options($actionID)
 	{
@@ -34,7 +39,12 @@ class WpToModxController extends Controller
 			'importImages',
 			'imagesPath',
 			'imagesLocalUrl',
-			'modxTemplate'
+			'modxTemplate',
+			'aliasPrefix',
+			'aliasSuffix',
+			'uriPrefix',
+			'uriSufix',
+			'resetCounter'
 		];
 	}
 
@@ -65,6 +75,11 @@ class WpToModxController extends Controller
 		{
 			$parentResource->deleteChildren();
 			$output .= Yii::t('app', 'Previous resources have been deleted.') . "\n";
+			
+			if ($this->resetCounter) {
+				ModxSiteContent::resetCounter();
+				$output .= Yii::t('app', 'Site content id auto-increment has been reseted.') . "\n";
+			}
 		}
 		
 		$imagesUrls = $this->getAttachmentsUrls($xml);
@@ -115,8 +130,8 @@ class WpToModxController extends Controller
 					$modxResource->published = '1';
 					$modxResource->content = $entryContentText;
 					$modxResource->hidemenu = '1';
-					$modxResource->alias = $postName;
-					$modxResource->uri = $postName;
+					$modxResource->alias = $this->aliasPrefix . $postName . $this->aliasSuffix;
+					$modxResource->uri = $this->uriPrefix . $postName . $this->uriSuffix;
 					$modxResource->template = isset($this->modxTemplate) ? $this->modxTemplate : $parentResource->template;
 					
 					if ($modxResource->save())
